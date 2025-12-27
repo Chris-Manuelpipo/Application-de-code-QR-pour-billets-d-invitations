@@ -446,12 +446,21 @@
         async function startCamera() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'environment' }
+                    video: { 
+                        facingMode: 'environment',
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
                 });
                 const video = document.getElementById('video');
                 video.srcObject = stream;
-                videoRunning = true;
-                scanQRCode();
+                
+                // Attendre que la vidéo soit prête avant de scanner
+                video.onloadedmetadata = () => {
+                    video.play();
+                    videoRunning = true;
+                    scanQRCode();
+                };
             } catch (error) {
                 showMessage('❌ Erreur caméra: ' + error.message, 'error');
             }
@@ -474,15 +483,27 @@
             const canvas = document.getElementById('canvas');
             const ctx = canvas.getContext('2d');
 
+            // Attendre que la vidéo soit prête
+            if (video.videoWidth === 0 || video.videoHeight === 0) {
+                if (videoRunning) {
+                    requestAnimationFrame(scanQRCode);
+                }
+                return;
+            }
+
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
 
-            ctx.drawImage(video, 0, 0);
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const code = jsQR(imageData.data, imageData.width, imageData.height);
+            try {
+                ctx.drawImage(video, 0, 0);
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height);
 
-            if (code) {
-                processQRCode(code.data);
+                if (code) {
+                    processQRCode(code.data);
+                }
+            } catch (error) {
+                console.error('Erreur scan:', error);
             }
 
             if (videoRunning) {
