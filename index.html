@@ -648,8 +648,24 @@
             }
         }
 
-        //Initialisation 
+        // Initialisation
         loadFromStorage();
+        
+        // Charger automatiquement les données au démarrage
+        async function autoLoadData() {
+            try {
+                const response = await fetch('tickets_data.json');
+                if (response.ok) {
+                    ticketsData = await response.json();
+                    saveToStorage();
+                    console.log(`✅ ${Object.keys(ticketsData).length} billets chargés automatiquement`);
+                }
+            } catch (error) {
+                console.log('tickets_data.json non trouvé - utilisez le formulaire pour charger');
+            }
+        }
+        
+        autoLoadData();
     </script>
 </body>
-</html>                                  
+</html>
